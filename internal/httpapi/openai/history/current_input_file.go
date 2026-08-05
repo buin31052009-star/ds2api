@@ -64,11 +64,13 @@ func (s Service) ApplyCurrentInputFile(ctx context.Context, a *auth.RequestAuth,
 		Data:        []byte(fileText),
 	}, 3)
 	if err != nil {
-		return stdReq, fmt.Errorf("upload current user input file: %w", err)
+		config.Logger.Warn("[current_input_file] upload input file failed, falling back to inline prompt", "error", err)
+		return stdReq, nil
 	}
 	fileID := strings.TrimSpace(result.ID)
 	if fileID == "" {
-		return stdReq, errors.New("upload current user input file returned empty file id")
+		config.Logger.Warn("[current_input_file] upload input file returned empty file id, falling back to inline prompt")
+		return stdReq, nil
 	}
 
 	toolFileID := ""
@@ -81,11 +83,13 @@ func (s Service) ApplyCurrentInputFile(ctx context.Context, a *auth.RequestAuth,
 			Data:        []byte(toolsText),
 		}, 3)
 		if err != nil {
-			return stdReq, fmt.Errorf("upload current tools file: %w", err)
+			config.Logger.Warn("[current_input_file] upload tools file failed, falling back to inline prompt", "error", err)
+			return stdReq, nil
 		}
 		toolFileID = strings.TrimSpace(result.ID)
 		if toolFileID == "" {
-			return stdReq, errors.New("upload current tools file returned empty file id")
+			config.Logger.Warn("[current_input_file] upload tools file returned empty file id, falling back to inline prompt")
+			return stdReq, nil
 		}
 	}
 
