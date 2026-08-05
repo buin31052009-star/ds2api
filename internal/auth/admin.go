@@ -201,11 +201,21 @@ func VerifyAdminCredential(candidate string, store AdminConfigReader) bool {
 			return verifyAdminPasswordHash(candidate, hash)
 		}
 	}
-	key := effectiveAdminKey(store)
-	if key == "" {
+	rawKeys := effectiveAdminKey(store)
+	if rawKeys == "" {
 		return false
 	}
-	return subtle.ConstantTimeCompare([]byte(candidate), []byte(key)) == 1
+	// Tách danh sách nhiều khóa Admin bằng dấu phẩy (,), dấu chấm phẩy (;), hoặc dấu cách
+	keys := strings.FieldsFunc(rawKeys, func(r rune) bool {
+		return r == ',' || r == ';' || r == ' ' || r == '\n'
+	})
+	for _, key := range keys {
+		key = strings.TrimSpace(key)
+		if key != "" && subtle.ConstantTimeCompare([]byte(candidate), []byte(key)) == 1 {
+			return true
+		}
+	}
+	return false
 }
 
 func UsingDefaultAdminKey(store AdminConfigReader) bool {
