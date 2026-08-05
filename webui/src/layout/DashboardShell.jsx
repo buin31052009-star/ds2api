@@ -48,16 +48,23 @@ export default function DashboardShell({ token, onLogout, config, fetchConfig, s
     const [userRole, setUserRole] = useState('admin')
 
     useEffect(() => {
-        // Kiểm tra xem đường dẫn hoặc token có chứa role user không
-        const isUserRoute = location.pathname.startsWith('/user')
-        if (isUserRoute) {
-            setUserRole('user')
-        } else {
-            // Kiểm tra verify role từ token
-            const storedRole = localStorage.getItem('ds2api_user_role')
-            setUserRole(storedRole || 'admin')
+        if (token) {
+            try {
+                const parts = token.split('.')
+                if (parts.length === 3) {
+                    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+                    if (payload.role) {
+                        setUserRole(payload.role)
+                        return
+                    }
+                }
+            } catch (_e) {
+                // Fallback nếu không parse được JWT
+            }
         }
-    }, [location.pathname])
+        const storedRole = localStorage.getItem('ds2api_user_role') || sessionStorage.getItem('ds2api_user_role')
+        setUserRole(storedRole || 'admin')
+    }, [token, location.pathname])
 
     const allNavItems = [
         { id: 'accounts', label: t('nav.accounts.label'), icon: Users, description: t('nav.accounts.desc'), adminOnly: false },
