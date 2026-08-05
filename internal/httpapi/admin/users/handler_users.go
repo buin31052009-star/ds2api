@@ -15,8 +15,8 @@ import (
 )
 
 func (h *Handler) listUsers(w http.ResponseWriter, _ *http.Request) {
+	users := h.Store.Users()
 	snap := h.Store.Snapshot()
-	users := snap.Users
 	accounts := snap.Accounts
 
 	// Group accounts by owner ID
