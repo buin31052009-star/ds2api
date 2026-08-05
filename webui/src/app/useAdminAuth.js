@@ -29,6 +29,10 @@ export function useAdminAuth({ location, t }) {
     }, [])
 
     useEffect(() => {
+        let timer = setTimeout(() => {
+            setAuthChecking(false)
+        }, 2000)
+
         const checkAuth = async () => {
             const storedToken = localStorage.getItem('ds2api_token') || sessionStorage.getItem('ds2api_token')
             const expiresAt = parseInt(localStorage.getItem('ds2api_token_expires') || sessionStorage.getItem('ds2api_token_expires') || '0')
@@ -50,11 +54,19 @@ export function useAdminAuth({ location, t }) {
                 } catch {
                     setToken(storedToken)
                 }
+            } else {
+                handleLogout()
             }
+            clearTimeout(timer)
             setAuthChecking(false)
         }
 
-        checkAuth()
+        checkAuth().catch(() => {
+            clearTimeout(timer)
+            setAuthChecking(false)
+        })
+
+        return () => clearTimeout(timer)
     }, [handleLogout, t])
 
     return {

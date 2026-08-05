@@ -51,9 +51,9 @@ export default function Login({ onLogin, onMessage }) {
                 <LanguageToggle />
             </div>
 
-            <div className="w-full max-w-[400px] relative z-10 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-full max-w-[400px] relative z-10">
                 <div className="w-full bg-card border border-border rounded-xl p-8 shadow-sm">
-                    <div className="text-center space-y-2 mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="text-center space-y-2 mb-8">
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-2">
                             <Lock className="w-6 h-6" />
                         </div>
@@ -61,7 +61,7 @@ export default function Login({ onLogin, onMessage }) {
                         <p className="text-sm text-muted-foreground/80">{t('login.subtitle')}</p>
                     </div>
 
-                    <form onSubmit={handleLogin} className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+                    <form onSubmit={handleLogin} className="space-y-5">
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest ml-1">{t('login.adminKeyLabel')}</label>
                             <div className="relative group">
