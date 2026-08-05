@@ -101,17 +101,19 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
 
             <QueueCards queueStatus={queueStatus} t={t} />
 
-            <ApiKeysPanel
-                t={t}
-                config={config}
-                keysExpanded={keysExpanded}
-                setKeysExpanded={setKeysExpanded}
-                onAddKey={openAddKey}
-                onEditKey={openEditKey}
-                copiedKey={copiedKey}
-                setCopiedKey={setCopiedKey}
-                onDeleteKey={deleteKey}
-            />
+            {(localStorage.getItem('ds2api_user_role') || 'admin') === 'admin' && (
+                <ApiKeysPanel
+                    t={t}
+                    config={config}
+                    keysExpanded={keysExpanded}
+                    setKeysExpanded={setKeysExpanded}
+                    onAddKey={openAddKey}
+                    onEditKey={openEditKey}
+                    copiedKey={copiedKey}
+                    setCopiedKey={setCopiedKey}
+                    onDeleteKey={deleteKey}
+                />
+            )}
 
             <AccountsTable
                 t={t}
