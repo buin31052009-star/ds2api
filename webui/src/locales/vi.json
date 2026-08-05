@@ -437,14 +437,14 @@
     },
     "login": {
         "welcome": "Chào mừng trở lại!",
-        "subtitle": "Nhập mã quản trị viên của bạn để tiếp tục.",
-        "adminKeyLabel": "Khóa quản trị",
-        "adminKeyPlaceholder": "Nhập khóa quản trị...",
-        "rememberSession": "Hãy nhớ buổi học này",
+        "subtitle": "Nhập Khóa truy cập (User Key hoặc Khóa Admin) để tiếp tục.",
+        "adminKeyLabel": "Khóa truy cập (Key)",
+        "adminKeyPlaceholder": "Nhập User Key hoặc Khóa Admin...",
+        "rememberSession": "Ghi nhớ phiên đăng nhập",
         "signIn": "Đăng nhập",
         "secureConnection": "Kết nối an toàn",
-        "adminPortal": "Cổng quản trị DS2API",
-        "signInFailed": "Đăng nhập thất bại.",
+        "adminPortal": "Cổng kết nối DS2API",
+        "signInFailed": "Đăng nhập thất bại. Vui lòng kiểm tra lại Key.",
         "networkError": "Lỗi kết nối: {error}"
     },
     "vercel": {

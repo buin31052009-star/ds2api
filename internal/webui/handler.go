@@ -25,7 +25,7 @@ func NewHandler() *Handler {
 }
 
 func RegisterRoutes(r chi.Router, h *Handler) {
-	r.Get("/", h.index)
+	r.Get("/", h.admin)
 	r.Get("/admin", h.admin)
 	r.Get("/admin123", h.admin)
 	r.Get("/user", h.admin)
@@ -43,10 +43,8 @@ func (h *Handler) HandleAdminFallback(w http.ResponseWriter, r *http.Request) bo
 	return true
 }
 
-func (h *Handler) index(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(welcomeHTML))
+func (h *Handler) index(w http.ResponseWriter, r *http.Request) {
+	h.admin(w, r)
 }
 
 func (h *Handler) admin(w http.ResponseWriter, r *http.Request) {
