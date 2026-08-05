@@ -190,8 +190,57 @@ func VerifyAdminRequestWithStore(r *http.Request, store AdminConfigReader) error
 	return errors.New("invalid credentials")
 }
 
+func AllAdminKeys(store AdminConfigReader) []string {
+	var adminKeys []string
+	seen := make(map[string]bool)
+
+	addKey := func(k string) {
+		k = strings.Trim(strings.TrimSpace(k), "\"'`")
+		if k != "" && !seen[k] {
+			seen[k] = true
+			adminKeys = append(adminKeys, k)
+		}
+	}
+
+	if store != nil {
+		if hash := strings.TrimSpace(store.AdminPasswordHash()); hash != "" {
+			return nil
+		}
+	}
+
+	for _, env := range os.Environ() {
+		pair := strings.SplitN(env, "=", 2)
+		if len(pair) != 2 {
+			continue
+		}
+		varUpper := strings.ToUpper(strings.TrimSpace(pair[0]))
+		varVal := strings.TrimSpace(pair[1])
+		if varVal == "" {
+			continue
+		}
+
+		// Nhận dạng DS2API_ADMIN_KEY, DS2API_ADMIN2_KEY, DS2API_ADMIN_KEY_2...
+		if varUpper == "DS2API_ADMIN_KEY" ||
+			strings.HasPrefix(varUpper, "DS2API_ADMIN_KEY_") ||
+			(strings.HasPrefix(varUpper, "DS2API_ADMIN") && strings.HasSuffix(varUpper, "_KEY")) {
+			parts := strings.FieldsFunc(varVal, func(r rune) bool {
+				return r == ',' || r == ';' || r == ' ' || r == '\n'
+			})
+			for _, p := range parts {
+				addKey(p)
+			}
+		}
+	}
+
+	if len(adminKeys) == 0 {
+		addKey("admin")
+	}
+
+	return adminKeys
+}
+
 func VerifyAdminCredential(candidate string, store AdminConfigReader) bool {
-	candidate = strings.TrimSpace(candidate)
+	candidate = strings.Trim(strings.TrimSpace(candidate), "\"'`")
 	if candidate == "" {
 		return false
 	}
@@ -201,17 +250,9 @@ func VerifyAdminCredential(candidate string, store AdminConfigReader) bool {
 			return verifyAdminPasswordHash(candidate, hash)
 		}
 	}
-	rawKeys := effectiveAdminKey(store)
-	if rawKeys == "" {
-		return false
-	}
-	// Tách danh sách nhiều khóa Admin bằng dấu phẩy (,), dấu chấm phẩy (;), hoặc dấu cách
-	keys := strings.FieldsFunc(rawKeys, func(r rune) bool {
-		return r == ',' || r == ';' || r == ' ' || r == '\n'
-	})
+	keys := AllAdminKeys(store)
 	for _, key := range keys {
-		key = strings.TrimSpace(key)
-		if key != "" && subtle.ConstantTimeCompare([]byte(candidate), []byte(key)) == 1 {
+		if key == candidate || strings.EqualFold(key, candidate) || subtle.ConstantTimeCompare([]byte(candidate), []byte(key)) == 1 {
 			return true
 		}
 	}
