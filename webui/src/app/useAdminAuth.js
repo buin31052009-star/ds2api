@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { detectRuntimeEnv } from '../utils/runtimeEnv'
 
-export function useAdminAuth({ isProduction, location, t }) {
+export function useAdminAuth({ location, t }) {
     const [message, setMessage] = useState(null)
     const [token, setToken] = useState(null)
     const [authChecking, setAuthChecking] = useState(true)
 
-    const isAdminRoute = location.pathname.startsWith('/admin') || isProduction
     const runtimeEnv = useMemo(() => detectRuntimeEnv(), [])
     const isVercel = runtimeEnv.isVercel
 
@@ -19,8 +18,10 @@ export function useAdminAuth({ isProduction, location, t }) {
         setToken(null)
         localStorage.removeItem('ds2api_token')
         localStorage.removeItem('ds2api_token_expires')
+        localStorage.removeItem('ds2api_user_role')
         sessionStorage.removeItem('ds2api_token')
         sessionStorage.removeItem('ds2api_token_expires')
+        sessionStorage.removeItem('ds2api_user_role')
     }, [])
 
     const handleLogin = useCallback((newToken) => {
@@ -28,11 +29,6 @@ export function useAdminAuth({ isProduction, location, t }) {
     }, [])
 
     useEffect(() => {
-        if (!isAdminRoute) {
-            setAuthChecking(false)
-            return
-        }
-
         const checkAuth = async () => {
             const storedToken = localStorage.getItem('ds2api_token') || sessionStorage.getItem('ds2api_token')
             const expiresAt = parseInt(localStorage.getItem('ds2api_token_expires') || sessionStorage.getItem('ds2api_token_expires') || '0')
@@ -43,6 +39,10 @@ export function useAdminAuth({ isProduction, location, t }) {
                         headers: { 'Authorization': `Bearer ${storedToken}` }
                     })
                     if (res.ok) {
+                        const data = await res.json()
+                        if (data.role) {
+                            localStorage.setItem('ds2api_user_role', data.role)
+                        }
                         setToken(storedToken)
                     } else {
                         handleLogout()
@@ -55,13 +55,12 @@ export function useAdminAuth({ isProduction, location, t }) {
         }
 
         checkAuth()
-    }, [handleLogout, isAdminRoute, t])
+    }, [handleLogout, t])
 
     return {
         token,
         authChecking,
         message,
-        isAdminRoute,
         isVercel,
         showMessage,
         handleLogin,

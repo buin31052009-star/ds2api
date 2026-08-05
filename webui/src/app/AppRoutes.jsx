@@ -13,24 +13,22 @@ export default function AppRoutes() {
     const navigate = useNavigate()
     const location = useLocation()
 
-    const isProduction = import.meta.env.MODE === 'production'
     const {
         token,
         authChecking,
         message,
-        isAdminRoute,
         isVercel,
         showMessage,
         handleLogin,
         handleLogout,
-    } = useAdminAuth({ isProduction, location, t })
+    } = useAdminAuth({ location, t })
 
     const {
         config,
         fetchConfig,
     } = useAdminConfig({ token, showMessage, t })
 
-    if (isAdminRoute && authChecking) {
+    if (authChecking) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-4">
@@ -43,10 +41,7 @@ export default function AppRoutes() {
 
     return (
         <Routes>
-            {!isProduction && (
-                <Route path="/" element={<LandingPage onEnter={() => navigate('/admin')} />} />
-            )}
-            <Route path={isProduction ? "/*" : "/admin/*"} element={
+            <Route path="/*" element={
                 token ? (
                     <DashboardShell
                         token={token}
@@ -78,7 +73,6 @@ export default function AppRoutes() {
                     </div>
                 )
             } />
-            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     )
 }
