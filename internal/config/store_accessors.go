@@ -180,6 +180,8 @@ func (s *Store) Users() []User {
 	defer s.mu.RUnlock()
 	out := make([]User, len(s.cfg.Users))
 	copy(out, s.cfg.Users)
+	envUsers := s.loadUsersFromEnv()
+	out = append(out, envUsers...)
 	return out
 }
 
@@ -195,7 +197,78 @@ func (s *Store) GetUserByKey(key string) (User, bool) {
 			return u, true
 		}
 	}
+	for _, u := range s.loadUsersFromEnv() {
+		if strings.TrimSpace(u.Key) == key {
+			return u, true
+		}
+	}
 	return User{}, false
+}
+
+func (s *Store) loadUsersFromEnv() []User {
+	var envUsers []User
+	seenKeys := make(map[string]bool)
+
+	for _, env := range os.Environ() {
+		pair := strings.SplitN(env, "=", 2)
+		if len(pair) != 2 {
+			continue
+		}
+		varName := strings.TrimSpace(pair[0])
+		varValue := strings.TrimSpace(pair[1])
+		if varValue == "" {
+			continue
+		}
+
+		// 1. Quét các biến dạng DS2API_USER_KEY_FOO hoặc DS2API_KEY_FOO
+		if strings.HasPrefix(varName, "DS2API_USER_KEY_") || (strings.HasPrefix(varName, "DS2API_KEY_") && varName != "DS2API_ADMIN_KEY") {
+			name := varName
+			if strings.HasPrefix(varName, "DS2API_USER_KEY_") {
+				name = strings.TrimPrefix(varName, "DS2API_USER_KEY_")
+			} else {
+				name = strings.TrimPrefix(varName, "DS2API_KEY_")
+			}
+			userID := "env_" + strings.ToLower(name)
+			if !seenKeys[varValue] {
+				seenKeys[varValue] = true
+				envUsers = append(envUsers, User{
+					ID:     userID,
+					Name:   name,
+					Key:    varValue,
+					Remark: "Khởi tạo từ biến môi trường " + varName,
+				})
+			}
+		}
+
+		// 2. Quét biến DS2API_USER_KEYS (ví dụ hung:key123,nam:key456)
+		if varName == "DS2API_USER_KEYS" {
+			parts := strings.Split(varValue, ",")
+			for idx, p := range parts {
+				p = strings.TrimSpace(p)
+				if p == "" {
+					continue
+				}
+				uname := fmt.Sprintf("User_%d", idx+1)
+				ukey := p
+				if strings.Contains(p, ":") {
+					kv := strings.SplitN(p, ":", 2)
+					uname = strings.TrimSpace(kv[0])
+					ukey = strings.TrimSpace(kv[1])
+				}
+				if ukey != "" && !seenKeys[ukey] {
+					seenKeys[ukey] = true
+					envUsers = append(envUsers, User{
+						ID:     "env_keys_" + strings.ToLower(uname),
+						Name:   uname,
+						Key:    ukey,
+						Remark: "Khởi tạo từ biến môi trường DS2API_USER_KEYS",
+					})
+				}
+			}
+		}
+	}
+
+	return envUsers
 }
 
 func (s *Store) AddUser(u User) error {

@@ -9,8 +9,27 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"ds2api/internal/auth"
 	"ds2api/internal/config"
 )
+
+func getCallerSpaceID(r *http.Request, store auth.AdminConfigReader) (string, bool) {
+	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+	if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+		return "", false
+	}
+	token := strings.TrimSpace(authHeader[7:])
+	payload, err := auth.VerifyJWTWithStore(token, store)
+	if err != nil || payload == nil {
+		return "", false
+	}
+	role, _ := payload["role"].(string)
+	if role == "user" {
+		uid, _ := payload["user_id"].(string)
+		return uid, true
+	}
+	return "", false
+}
 
 func (h *Handler) listAccounts(w http.ResponseWriter, r *http.Request) {
 	page := intFromQuery(r, "page", 1)
@@ -24,7 +43,21 @@ func (h *Handler) listAccounts(w http.ResponseWriter, r *http.Request) {
 	if pageSize > 5000 {
 		pageSize = 5000
 	}
-	accounts := h.Store.Snapshot().Accounts
+	callerSpaceID, isUser := getCallerSpaceID(r, h.Store)
+	rawAccounts := h.Store.Snapshot().Accounts
+
+	var accounts []config.Account
+	if isUser {
+		accounts = make([]config.Account, 0, len(rawAccounts))
+		for _, acc := range rawAccounts {
+			if acc.Owner == callerSpaceID {
+				accounts = append(accounts, acc)
+			}
+		}
+	} else {
+		accounts = rawAccounts
+	}
+
 	reverseAccounts(accounts)
 	q := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("q")))
 	if q != "" {
@@ -69,15 +102,20 @@ func (h *Handler) listAccounts(w http.ResponseWriter, r *http.Request) {
 			"has_token":     token != "",
 			"token_preview": maskSecretPreview(token),
 			"test_status":   testStatus,
+			"owner":         acc.Owner,
 		})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": items, "total": total, "page": page, "page_size": pageSize, "total_pages": totalPages})
 }
 
 func (h *Handler) addAccount(w http.ResponseWriter, r *http.Request) {
+	callerSpaceID, isUser := getCallerSpaceID(r, h.Store)
 	var req map[string]any
 	_ = json.NewDecoder(r.Body).Decode(&req)
 	acc := toAccount(req)
+	if isUser {
+		acc.Owner = callerSpaceID
+	}
 	if acc.Identifier() == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"detail": "需要 email 或 mobile"})
 		return
@@ -109,6 +147,7 @@ func (h *Handler) addAccount(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) updateAccount(w http.ResponseWriter, r *http.Request) {
+	callerSpaceID, isUser := getCallerSpaceID(r, h.Store)
 	identifier := chi.URLParam(r, "identifier")
 	if decoded, err := url.PathUnescape(identifier); err == nil {
 		identifier = decoded
@@ -126,6 +165,9 @@ func (h *Handler) updateAccount(w http.ResponseWriter, r *http.Request) {
 		for i, acc := range c.Accounts {
 			if !accountMatchesIdentifier(acc, identifier) {
 				continue
+			}
+			if isUser && acc.Owner != callerSpaceID {
+				return newRequestError("无权修改此账号")
 			}
 			if nameOK {
 				c.Accounts[i].Name = name
@@ -149,6 +191,7 @@ func (h *Handler) updateAccount(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deleteAccount(w http.ResponseWriter, r *http.Request) {
+	callerSpaceID, isUser := getCallerSpaceID(r, h.Store)
 	identifier := chi.URLParam(r, "identifier")
 	if decoded, err := url.PathUnescape(identifier); err == nil {
 		identifier = decoded
@@ -157,6 +200,9 @@ func (h *Handler) deleteAccount(w http.ResponseWriter, r *http.Request) {
 		idx := -1
 		for i, a := range c.Accounts {
 			if accountMatchesIdentifier(a, identifier) {
+				if isUser && a.Owner != callerSpaceID {
+					return fmt.Errorf("无权删除此账号")
+				}
 				idx = i
 				break
 			}
