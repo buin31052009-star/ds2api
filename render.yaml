@@ -10,5 +10,5 @@ services:
         value: 5001
       - key: DS2API_ADMIN_KEY
         generateValue: true
-      - key: DS2API_CONFIG_JSON
-        value: '{"admin":{"jwt_expire_hours":24}}'
+      - key: DS2API_CONFIG_PATH
+        value: 'config.json'
