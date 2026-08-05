@@ -61,7 +61,13 @@ func (r *Resolver) Determine(req *http.Request) (*RequestAuth, error) {
 	}
 	callerID := callerTokenID(callerKey)
 	ctx := req.Context()
-	if !r.Store.HasAPIKey(callerKey) {
+
+	isManaged := (r.Store != nil && r.Store.HasAPIKey(callerKey)) ||
+		VerifyAdminCredential(callerKey, r.Store) ||
+		isUserKey(callerKey, r.Store) ||
+		isValidJWT(callerKey, r.Store)
+
+	if !isManaged {
 		return &RequestAuth{
 			UseConfigToken: false,
 			DeepSeekToken:  callerKey,
@@ -76,6 +82,22 @@ func (r *Resolver) Determine(req *http.Request) (*RequestAuth, error) {
 		return nil, err
 	}
 	return a, nil
+}
+
+func isUserKey(key string, store *config.Store) bool {
+	if store == nil {
+		return false
+	}
+	_, ok := store.GetUserByKey(key)
+	return ok
+}
+
+func isValidJWT(token string, store *config.Store) bool {
+	if store == nil {
+		return false
+	}
+	_, err := VerifyJWTWithStore(token, store)
+	return err == nil
 }
 
 func (r *Resolver) acquireManagedRequestAuth(ctx context.Context, callerID, target string) (*RequestAuth, error) {
