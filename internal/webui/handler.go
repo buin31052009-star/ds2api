@@ -35,10 +35,6 @@ func (h *Handler) HandleAdminFallback(w http.ResponseWriter, r *http.Request) bo
 	if r.Method != http.MethodGet {
 		return false
 	}
-	p := r.URL.Path
-	if !strings.HasPrefix(p, "/admin/") && !strings.HasPrefix(p, "/admin123/") && !strings.HasPrefix(p, "/user/") {
-		return false
-	}
 	h.admin(w, r)
 	return true
 }

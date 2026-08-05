@@ -121,7 +121,7 @@ func NewApp() (*App, error) {
 	})
 	webui.RegisterRoutes(r, webuiHandler)
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {
-		if strings.HasPrefix(req.URL.Path, "/admin/") && webuiHandler.HandleAdminFallback(w, req) {
+		if webuiHandler.HandleAdminFallback(w, req) {
 			return
 		}
 		http.NotFound(w, req)
