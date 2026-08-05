@@ -12,12 +12,12 @@ func ShouldWriteUpstreamEmptyOutputError(text, thinking string) bool {
 func UpstreamEmptyOutputDetail(contentFilter bool, text, thinking string) (int, string, string) {
 	_ = text
 	if contentFilter {
-		return http.StatusBadRequest, "Upstream content filtered the response and returned no output.", "content_filter"
+		return http.StatusBadRequest, "Nội dung phản hồi bị bộ lọc DeepSeek chặn (Content Filter).", "content_filter"
 	}
 	if thinking != "" {
-		return http.StatusTooManyRequests, "Upstream account hit a rate limit and returned reasoning without visible output.", "upstream_empty_output"
+		return http.StatusTooManyRequests, "Tài khoản DeepSeek đạt giới hạn lượt dùng trong thời gian ngắn. Vui lòng thử lại sau ít phút.", "upstream_empty_output"
 	}
-	return http.StatusServiceUnavailable, "Upstream service is unavailable and returned no output.", "upstream_unavailable"
+	return http.StatusServiceUnavailable, "Chưa có tài khoản DeepSeek nào khả dụng hoặc tài khoản chưa đăng nhập. Vui lòng vào mục 'Quản lý Tài khoản' để thêm Email/Mật khẩu DeepSeek.", "upstream_unavailable"
 }
 
 func WriteUpstreamEmptyOutputError(w http.ResponseWriter, text, thinking string, contentFilter bool) bool {
