@@ -19,7 +19,7 @@ export default function UserManagementContainer() {
         setErrorMsg('')
         try {
             const token = localStorage.getItem('ds2api_token') || sessionStorage.getItem('ds2api_token')
-            const res = await fetch('/api/admin/users', {
+            const res = await fetch('/admin/users', {
                 headers: { Authorization: `Bearer ${token}` }
             })
             if (res.ok) {
@@ -53,7 +53,7 @@ export default function UserManagementContainer() {
         setSubmitting(true)
         try {
             const token = localStorage.getItem('ds2api_token') || sessionStorage.getItem('ds2api_token')
-            const res = await fetch('/api/admin/users', {
+            const res = await fetch('/admin/users', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ export default function UserManagementContainer() {
         if (!confirm(`Bạn có chắc chắn muốn xóa User "${name}"? Các tài khoản liên quan sẽ trở về dạng trực thuộc Admin.`)) return
         try {
             const token = localStorage.getItem('ds2api_token') || sessionStorage.getItem('ds2api_token')
-            const res = await fetch(`/api/admin/users/${id}`, {
+            const res = await fetch(`/admin/users/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             })
