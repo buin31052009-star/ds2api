@@ -115,7 +115,7 @@ func loadConfig() (Config, bool, error) {
 }
 
 func shouldBootstrapMissingConfigFile(err error) bool {
-	return errors.Is(err, os.ErrNotExist) && strings.TrimSpace(os.Getenv("DS2API_CONFIG_PATH")) != ""
+	return errors.Is(err, os.ErrNotExist)
 }
 
 func loadConfigFromFile(path string) (Config, error) {
