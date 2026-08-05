@@ -98,6 +98,34 @@ func CreateJWTWithStore(expireHours int, store AdminConfigReader) (string, error
 	return msg + "." + rawB64Encode(sig), nil
 }
 
+func CreateUserJWTWithStore(userID, userName string, expireHours int, store AdminConfigReader) (string, error) {
+	if expireHours <= 0 {
+		expireHours = jwtExpireHours(store)
+	}
+	issuedAt := time.Now().Unix()
+	if store != nil {
+		if validAfter := store.AdminJWTValidAfterUnix(); validAfter >= issuedAt {
+			issuedAt = validAfter + 1
+		}
+	}
+	expireAt := time.Unix(issuedAt, 0).Add(time.Duration(expireHours) * time.Hour).Unix()
+	header := map[string]any{"alg": "HS256", "typ": "JWT"}
+	payload := map[string]any{
+		"iat":       issuedAt,
+		"exp":       expireAt,
+		"role":      "user",
+		"user_id":   userID,
+		"user_name": userName,
+	}
+	h, _ := json.Marshal(header)
+	p, _ := json.Marshal(payload)
+	headerB64 := rawB64Encode(h)
+	payloadB64 := rawB64Encode(p)
+	msg := headerB64 + "." + payloadB64
+	sig := signHS256(msg, store)
+	return msg + "." + rawB64Encode(sig), nil
+}
+
 func VerifyJWT(token string) (map[string]any, error) {
 	return VerifyJWTWithStore(token, nil)
 }

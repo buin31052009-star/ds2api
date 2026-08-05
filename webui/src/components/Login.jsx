@@ -29,6 +29,7 @@ export default function Login({ onLogin, onMessage }) {
                 const storage = remember ? localStorage : sessionStorage
                 storage.setItem('ds2api_token', data.token)
                 storage.setItem('ds2api_token_expires', Date.now() + data.expires_in * 1000)
+                storage.setItem('ds2api_user_role', data.role || 'admin')
 
                 onLogin(data.token)
                 if (data.message) {

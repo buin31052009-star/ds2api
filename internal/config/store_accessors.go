@@ -174,3 +174,57 @@ func (s *Store) ThinkingInjectionPrompt() string {
 	defer s.mu.RUnlock()
 	return strings.TrimSpace(s.cfg.ThinkingInjection.Prompt)
 }
+
+func (s *Store) Users() []User {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]User, len(s.cfg.Users))
+	copy(out, s.cfg.Users)
+	return out
+}
+
+func (s *Store) GetUserByKey(key string) (User, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return User{}, false
+	}
+	for _, u := range s.cfg.Users {
+		if strings.TrimSpace(u.Key) == key {
+			return u, true
+		}
+	}
+	return User{}, false
+}
+
+func (s *Store) AddUser(u User) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	u.ID = strings.TrimSpace(u.ID)
+	u.Key = strings.TrimSpace(u.Key)
+	if u.Key == "" {
+		return nil
+	}
+	for _, existing := range s.cfg.Users {
+		if existing.ID == u.ID || existing.Key == u.Key {
+			return nil
+		}
+	}
+	s.cfg.Users = append(s.cfg.Users, u)
+	return s.saveLocked()
+}
+
+func (s *Store) DeleteUser(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	id = strings.TrimSpace(id)
+	newUsers := make([]User, 0, len(s.cfg.Users))
+	for _, u := range s.cfg.Users {
+		if u.ID != id {
+			newUsers = append(newUsers, u)
+		}
+	}
+	s.cfg.Users = newUsers
+	return s.saveLocked()
+}

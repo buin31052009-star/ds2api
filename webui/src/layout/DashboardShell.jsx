@@ -26,6 +26,7 @@ const BatchImport = lazy(() => import('../components/BatchImport'))
 const VercelSyncContainer = lazy(() => import('../features/vercel/VercelSyncContainer'))
 const SettingsContainer = lazy(() => import('../features/settings/SettingsContainer'))
 const ProxyManagerContainer = lazy(() => import('../features/proxy/ProxyManagerContainer'))
+const UserManagementContainer = lazy(() => import('../features/users/UserManagementContainer'))
 
 function TabLoadingFallback({ label }) {
     return (
@@ -43,16 +44,32 @@ export default function DashboardShell({ token, onLogout, config, fetchConfig, s
     const location = useLocation()
     const navigate = useNavigate()
     const [sidebarOpen, setSidebarOpen] = useState(false)
+    const [userRole, setUserRole] = useState('admin')
 
-    const navItems = [
-        { id: 'accounts', label: t('nav.accounts.label'), icon: Users, description: t('nav.accounts.desc') },
-        { id: 'proxies', label: t('nav.proxies.label'), icon: Globe, description: t('nav.proxies.desc') },
-        { id: 'test', label: t('nav.test.label'), icon: Server, description: t('nav.test.desc') },
-        { id: 'history', label: t('nav.history.label'), icon: History, description: t('nav.history.desc') },
-        { id: 'import', label: t('nav.import.label'), icon: Upload, description: t('nav.import.desc') },
-        { id: 'vercel', label: t('nav.vercel.label'), icon: Cloud, description: t('nav.vercel.desc') },
-        { id: 'settings', label: t('nav.settings.label'), icon: SettingsIcon, description: t('nav.settings.desc') },
+    useEffect(() => {
+        // Kiểm tra xem đường dẫn hoặc token có chứa role user không
+        const isUserRoute = location.pathname.startsWith('/user')
+        if (isUserRoute) {
+            setUserRole('user')
+        } else {
+            // Kiểm tra verify role từ token
+            const storedRole = localStorage.getItem('ds2api_user_role')
+            setUserRole(storedRole || 'admin')
+        }
+    }, [location.pathname])
+
+    const allNavItems = [
+        { id: 'accounts', label: t('nav.accounts.label'), icon: Users, description: t('nav.accounts.desc'), adminOnly: false },
+        { id: 'users', label: 'Quản lý Người dùng', icon: Shield, description: 'Quản lý các bạn bè và theo dõi danh sách tài khoản DeepSeek', adminOnly: true },
+        { id: 'proxies', label: t('nav.proxies.label'), icon: Globe, description: t('nav.proxies.desc'), adminOnly: false },
+        { id: 'test', label: t('nav.test.label'), icon: Server, description: t('nav.test.desc'), adminOnly: false },
+        { id: 'history', label: t('nav.history.label'), icon: History, description: t('nav.history.desc'), adminOnly: false },
+        { id: 'import', label: t('nav.import.label'), icon: Upload, description: t('nav.import.desc'), adminOnly: true },
+        { id: 'vercel', label: t('nav.vercel.label'), icon: Cloud, description: t('nav.vercel.desc'), adminOnly: true },
+        { id: 'settings', label: t('nav.settings.label'), icon: SettingsIcon, description: t('nav.settings.desc'), adminOnly: true },
     ]
+
+    const navItems = allNavItems.filter(item => userRole === 'admin' || !item.adminOnly)
 
     const tabIds = new Set(navItems.map(item => item.id))
     const pathSegments = location.pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean)
@@ -111,6 +128,8 @@ export default function DashboardShell({ token, onLogout, config, fetchConfig, s
         switch (activeTab) {
             case 'accounts':
                 return <AccountManagerContainer config={config} onRefresh={fetchConfig} onMessage={showMessage} authFetch={authFetch} />
+            case 'users':
+                return <UserManagementContainer />
             case 'proxies':
                 return <ProxyManagerContainer config={config} onRefresh={fetchConfig} onMessage={showMessage} authFetch={authFetch} />
             case 'test':

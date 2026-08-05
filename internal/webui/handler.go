@@ -27,13 +27,16 @@ func NewHandler() *Handler {
 func RegisterRoutes(r chi.Router, h *Handler) {
 	r.Get("/", h.index)
 	r.Get("/admin", h.admin)
+	r.Get("/admin123", h.admin)
+	r.Get("/user", h.admin)
 }
 
 func (h *Handler) HandleAdminFallback(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodGet {
 		return false
 	}
-	if !strings.HasPrefix(r.URL.Path, "/admin/") {
+	p := r.URL.Path
+	if !strings.HasPrefix(p, "/admin/") && !strings.HasPrefix(p, "/admin123/") && !strings.HasPrefix(p, "/user/") {
 		return false
 	}
 	h.admin(w, r)
@@ -96,7 +99,13 @@ func setStaticContentType(w http.ResponseWriter, fullPath string) {
 
 func (h *Handler) serveFromDisk(w http.ResponseWriter, r *http.Request, staticDir string) {
 	root := filepath.Clean(staticDir)
-	path := strings.TrimPrefix(r.URL.Path, "/admin")
+	path := r.URL.Path
+	for _, prefix := range []string{"/admin123", "/admin", "/user"} {
+		if strings.HasPrefix(path, prefix) {
+			path = strings.TrimPrefix(path, prefix)
+			break
+		}
+	}
 	path = strings.TrimPrefix(path, "/")
 	if path != "" && strings.Contains(path, ".") {
 		full := filepath.Join(root, filepath.Clean(path))

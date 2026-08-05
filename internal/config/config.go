@@ -11,6 +11,7 @@ type Config struct {
 	Keys              []string                `json:"keys,omitempty"`
 	APIKeys           []APIKey                `json:"api_keys,omitempty"`
 	Accounts          []Account               `json:"accounts,omitempty"`
+	Users             []User                  `json:"users,omitempty"`
 	Proxies           []Proxy                 `json:"proxies,omitempty"`
 	ModelAliases      map[string]string       `json:"model_aliases,omitempty"`
 	Admin             AdminConfig             `json:"admin,omitempty"`
@@ -26,6 +27,14 @@ type Config struct {
 	AdditionalFields  map[string]any          `json:"-"`
 }
 
+type User struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Key       string `json:"key"`
+	Remark    string `json:"remark,omitempty"`
+	CreatedAt int64  `json:"created_at,omitempty"`
+}
+
 type Account struct {
 	Name     string `json:"name,omitempty"`
 	Remark   string `json:"remark,omitempty"`
@@ -34,12 +43,14 @@ type Account struct {
 	Password string `json:"password,omitempty"`
 	Token    string `json:"token,omitempty"`
 	ProxyID  string `json:"proxy_id,omitempty"`
+	Owner    string `json:"owner,omitempty"`
 }
 
 type APIKey struct {
 	Key    string `json:"key"`
 	Name   string `json:"name,omitempty"`
 	Remark string `json:"remark,omitempty"`
+	Owner  string `json:"owner,omitempty"`
 }
 
 type Proxy struct {

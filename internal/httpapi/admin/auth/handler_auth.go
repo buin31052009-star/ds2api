@@ -25,19 +25,49 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&req)
 	adminKey, _ := req["admin_key"].(string)
 	expireHours := intFrom(req["expire_hours"])
-	if !authn.VerifyAdminCredential(adminKey, h.Store) {
-		writeJSON(w, http.StatusUnauthorized, map[string]any{"detail": "Invalid admin key"})
+	adminKey = strings.TrimSpace(adminKey)
+
+	// 1. Kiểm tra nếu là Admin Credential (ví dụ admin123 hoặc DS2API_ADMIN_KEY)
+	if authn.VerifyAdminCredential(adminKey, h.Store) {
+		token, err := authn.CreateJWTWithStore(expireHours, h.Store)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"detail": err.Error()})
+			return
+		}
+		if expireHours <= 0 {
+			expireHours = h.Store.AdminJWTExpireHours()
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success":    true,
+			"token":      token,
+			"role":       "admin",
+			"expires_in": expireHours * 3600,
+		})
 		return
 	}
-	token, err := authn.CreateJWTWithStore(expireHours, h.Store)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{"detail": err.Error()})
+
+	// 2. Kiểm tra nếu là User Key cá nhân do Admin cấp
+	if user, ok := h.Store.GetUserByKey(adminKey); ok {
+		token, err := authn.CreateUserJWTWithStore(user.ID, user.Name, expireHours, h.Store)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"detail": err.Error()})
+			return
+		}
+		if expireHours <= 0 {
+			expireHours = h.Store.AdminJWTExpireHours()
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success":    true,
+			"token":      token,
+			"role":       "user",
+			"user_id":    user.ID,
+			"user_name":  user.Name,
+			"expires_in": expireHours * 3600,
+		})
 		return
 	}
-	if expireHours <= 0 {
-		expireHours = h.Store.AdminJWTExpireHours()
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"success": true, "token": token, "expires_in": expireHours * 3600})
+
+	writeJSON(w, http.StatusUnauthorized, map[string]any{"detail": "Khóa quản trị hoặc User Key không hợp lệ"})
 }
 
 func (h *Handler) verify(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +87,20 @@ func (h *Handler) verify(w http.ResponseWriter, r *http.Request) {
 	if remaining < 0 {
 		remaining = 0
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"valid": true, "expires_at": int64(exp), "remaining_seconds": remaining})
+	role, _ := payload["role"].(string)
+	userID, _ := payload["user_id"].(string)
+	userName, _ := payload["user_name"].(string)
+	if role == "" {
+		role = "admin"
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"valid":             true,
+		"role":              role,
+		"user_id":           userID,
+		"user_name":         userName,
+		"expires_at":        int64(exp),
+		"remaining_seconds": remaining,
+	})
 }
 
 func (h *Handler) getVercelConfig(w http.ResponseWriter, _ *http.Request) {

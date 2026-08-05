@@ -38,6 +38,10 @@ type ConfigStore interface {
 	ThinkingInjectionEnabled() bool
 	ThinkingInjectionPrompt() string
 	AutoDeleteSessions() bool
+	Users() []config.User
+	GetUserByKey(key string) (config.User, bool)
+	AddUser(u config.User) error
+	DeleteUser(id string) error
 }
 
 type PoolController interface {
