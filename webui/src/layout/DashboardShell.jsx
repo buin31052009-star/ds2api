@@ -12,7 +12,8 @@ import {
     Users,
     Globe,
     History,
-    Loader2
+    Loader2,
+    Shield
 } from 'lucide-react'
 import clsx from 'clsx'
 
