@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { Plus, Trash2, Copy, Check, Eye, EyeOff, Shield, Users, Key, ChevronDown, ChevronUp } from 'lucide-react'
 
-export default function UserManagementContainer() {
+export default function UserManagementContainer({ authFetch }) {
     const { t } = useI18n()
     const [users, setUsers] = useState([])
     const [loading, setLoading] = useState(true)
@@ -14,22 +14,40 @@ export default function UserManagementContainer() {
     const [expandedUser, setExpandedUser] = useState(null)
     const [errorMsg, setErrorMsg] = useState('')
 
+    const safeFetch = async (url, options = {}) => {
+        if (authFetch) {
+            return authFetch(url, options)
+        }
+        const token = localStorage.getItem('ds2api_token') || sessionStorage.getItem('ds2api_token')
+        const headers = {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`
+        }
+        return fetch(url, { ...options, headers })
+    }
+
+    const safeFetchJson = async (url, options = {}) => {
+        const res = await safeFetch(url, options)
+        const contentType = res.headers.get('content-type') || ''
+        if (!contentType.includes('application/json')) {
+            throw new Error('Server đang cập nhật phiên bản mới. Vui lòng tải lại trang sau 30 giây.')
+        }
+        const data = await res.json()
+        return { res, data }
+    }
+
     const fetchUsers = async () => {
         setLoading(true)
         setErrorMsg('')
         try {
-            const token = localStorage.getItem('ds2api_token') || sessionStorage.getItem('ds2api_token')
-            const res = await fetch('/admin/users', {
-                headers: { Authorization: `Bearer ${token}` }
-            })
+            const { res, data } = await safeFetchJson('/admin/users')
             if (res.ok) {
-                const data = await res.json()
                 setUsers(data.users || [])
             } else {
                 setErrorMsg('Không thể tải danh sách người dùng. Chỉ Admin mới có quyền xem.')
             }
         } catch (e) {
-            setErrorMsg('Lỗi mạng: ' + e.message)
+            setErrorMsg(e.message)
         } finally {
             setLoading(false)
         }
@@ -52,16 +70,11 @@ export default function UserManagementContainer() {
         e.preventDefault()
         setSubmitting(true)
         try {
-            const token = localStorage.getItem('ds2api_token') || sessionStorage.getItem('ds2api_token')
-            const res = await fetch('/admin/users', {
+            const { res, data } = await safeFetchJson('/admin/users', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             })
-            const data = await res.json()
             if (res.ok && data.success) {
                 setShowModal(false)
                 setFormData({ name: '', remark: '', key: '' })
@@ -70,7 +83,7 @@ export default function UserManagementContainer() {
                 alert(data.detail || 'Không thể tạo User mới')
             }
         } catch (e) {
-            alert('Lỗi: ' + e.message)
+            alert('Thông báo: ' + e.message)
         } finally {
             setSubmitting(false)
         }
@@ -79,10 +92,8 @@ export default function UserManagementContainer() {
     const handleDeleteUser = async (id, name) => {
         if (!confirm(`Bạn có chắc chắn muốn xóa User "${name}"? Các tài khoản liên quan sẽ trở về dạng trực thuộc Admin.`)) return
         try {
-            const token = localStorage.getItem('ds2api_token') || sessionStorage.getItem('ds2api_token')
-            const res = await fetch(`/admin/users/${id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
+            const { res } = await safeFetchJson(`/admin/users/${id}`, {
+                method: 'DELETE'
             })
             if (res.ok) {
                 fetchUsers()
@@ -90,7 +101,7 @@ export default function UserManagementContainer() {
                 alert('Xóa User thất bại')
             }
         } catch (e) {
-            alert('Lỗi: ' + e.message)
+            alert('Thông báo: ' + e.message)
         }
     }
 
