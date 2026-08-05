@@ -216,18 +216,23 @@ func (s *Store) loadUsersFromEnv() []User {
 			continue
 		}
 		varName := strings.TrimSpace(pair[0])
-		varValue := strings.TrimSpace(pair[1])
+		varUpper := strings.ToUpper(varName)
+		varValue := strings.Trim(strings.TrimSpace(pair[1]), "\"'`")
 		if varValue == "" {
 			continue
 		}
 
 		// 1. Quét các biến dạng DS2API_USER_KEY_FOO hoặc DS2API_KEY_FOO
-		if strings.HasPrefix(varName, "DS2API_USER_KEY_") || (strings.HasPrefix(varName, "DS2API_KEY_") && varName != "DS2API_ADMIN_KEY") {
+		if strings.HasPrefix(varUpper, "DS2API_USER_KEY_") || (strings.HasPrefix(varUpper, "DS2API_KEY_") && varUpper != "DS2API_ADMIN_KEY") {
 			name := varName
-			if strings.HasPrefix(varName, "DS2API_USER_KEY_") {
-				name = strings.TrimPrefix(varName, "DS2API_USER_KEY_")
+			if strings.HasPrefix(varUpper, "DS2API_USER_KEY_") {
+				name = varName[len("DS2API_USER_KEY_"):]
 			} else {
-				name = strings.TrimPrefix(varName, "DS2API_KEY_")
+				name = varName[len("DS2API_KEY_"):]
+			}
+			name = strings.TrimSpace(name)
+			if name == "" {
+				name = "User"
 			}
 			userID := "env_" + strings.ToLower(name)
 			if !seenKeys[varValue] {
@@ -242,10 +247,10 @@ func (s *Store) loadUsersFromEnv() []User {
 		}
 
 		// 2. Quét biến DS2API_USER_KEYS (ví dụ hung:key123,nam:key456)
-		if varName == "DS2API_USER_KEYS" {
+		if varUpper == "DS2API_USER_KEYS" {
 			parts := strings.Split(varValue, ",")
 			for idx, p := range parts {
-				p = strings.TrimSpace(p)
+				p = strings.Trim(strings.TrimSpace(p), "\"'`")
 				if p == "" {
 					continue
 				}
@@ -253,8 +258,8 @@ func (s *Store) loadUsersFromEnv() []User {
 				ukey := p
 				if strings.Contains(p, ":") {
 					kv := strings.SplitN(p, ":", 2)
-					uname = strings.TrimSpace(kv[0])
-					ukey = strings.TrimSpace(kv[1])
+					uname = strings.Trim(strings.TrimSpace(kv[0]), "\"'`")
+					ukey = strings.Trim(strings.TrimSpace(kv[1]), "\"'`")
 				}
 				if ukey != "" && !seenKeys[ukey] {
 					seenKeys[ukey] = true

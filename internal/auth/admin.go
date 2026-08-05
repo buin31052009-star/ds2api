@@ -35,7 +35,7 @@ func effectiveAdminKey(store AdminConfigReader) string {
 			return ""
 		}
 	}
-	if v := strings.TrimSpace(os.Getenv("DS2API_ADMIN_KEY")); v != "" {
+	if v := strings.Trim(strings.TrimSpace(os.Getenv("DS2API_ADMIN_KEY")), "\"'`"); v != "" {
 		return v
 	}
 	warnOnce.Do(func() {
