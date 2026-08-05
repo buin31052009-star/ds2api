@@ -224,12 +224,14 @@ func (s *Store) loadUsersFromEnv() []User {
 			continue
 		}
 
-		// 1. Quét các biến dạng DS2API_USER_KEY_FOO hoặc DS2API_KEY_FOO
-		if strings.HasPrefix(varUpper, "DS2API_USER_KEY_") || (strings.HasPrefix(varUpper, "DS2API_KEY_") && varUpper != "DS2API_ADMIN_KEY") {
+		// 1. Quét các biến dạng DS2API_USER_KEY_FOO, DS2API_USER_FOO hoặc DS2API_KEY_FOO (bỏ qua biến ADMIN)
+		if (strings.HasPrefix(varUpper, "DS2API_USER") || strings.HasPrefix(varUpper, "DS2API_KEY")) && !strings.Contains(varUpper, "ADMIN") {
 			name := varName
 			if strings.HasPrefix(varUpper, "DS2API_USER_KEY_") {
 				name = varName[len("DS2API_USER_KEY_"):]
-			} else {
+			} else if strings.HasPrefix(varUpper, "DS2API_USER_") {
+				name = varName[len("DS2API_USER_"):]
+			} else if strings.HasPrefix(varUpper, "DS2API_KEY_") {
 				name = varName[len("DS2API_KEY_"):]
 			}
 			name = strings.TrimSpace(name)

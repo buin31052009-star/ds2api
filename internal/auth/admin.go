@@ -213,10 +213,8 @@ func AllAdminKeys(store AdminConfigReader) []string {
 			continue
 		}
 
-		// Nhận dạng DS2API_ADMIN_KEY, DS2API_ADMIN2_KEY, DS2API_ADMIN_KEY_2...
-		if varUpper == "DS2API_ADMIN_KEY" ||
-			strings.HasPrefix(varUpper, "DS2API_ADMIN_KEY_") ||
-			(strings.HasPrefix(varUpper, "DS2API_ADMIN") && strings.HasSuffix(varUpper, "_KEY")) {
+		// Nhận dạng TẤT CẢ các biến môi trường bắt đầu bằng DS2API_ADMIN
+		if strings.HasPrefix(varUpper, "DS2API_ADMIN") {
 			parts := strings.FieldsFunc(varVal, func(r rune) bool {
 				return r == ',' || r == ';' || r == ' ' || r == '\n'
 			})
