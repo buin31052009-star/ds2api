@@ -189,17 +189,19 @@ func (s *Store) Users() []User {
 func (s *Store) GetUserByKey(key string) (User, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	key = strings.TrimSpace(key)
+	key = strings.Trim(strings.TrimSpace(key), "\"'`")
 	if key == "" {
 		return User{}, false
 	}
 	for _, u := range s.cfg.Users {
-		if strings.TrimSpace(u.Key) == key {
+		uk := strings.Trim(strings.TrimSpace(u.Key), "\"'`")
+		if uk == key || strings.EqualFold(uk, key) {
 			return u, true
 		}
 	}
 	for _, u := range s.loadUsersFromEnv() {
-		if strings.TrimSpace(u.Key) == key {
+		uk := strings.Trim(strings.TrimSpace(u.Key), "\"'`")
+		if uk == key || strings.EqualFold(uk, key) {
 			return u, true
 		}
 	}
