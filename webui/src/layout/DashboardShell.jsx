@@ -68,7 +68,6 @@ export default function DashboardShell({ token, onLogout, config, fetchConfig, s
 
     const allNavItems = [
         { id: 'accounts', label: t('nav.accounts.label'), icon: Users, description: t('nav.accounts.desc'), adminOnly: false },
-        { id: 'users', label: 'Quản lý Người dùng', icon: Shield, description: 'Quản lý các bạn bè và theo dõi danh sách tài khoản DeepSeek', adminOnly: true },
         { id: 'proxies', label: t('nav.proxies.label'), icon: Globe, description: t('nav.proxies.desc'), adminOnly: false },
         { id: 'test', label: t('nav.test.label'), icon: Server, description: t('nav.test.desc'), adminOnly: false },
         { id: 'history', label: t('nav.history.label'), icon: History, description: t('nav.history.desc'), adminOnly: false },

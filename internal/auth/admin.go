@@ -202,12 +202,6 @@ func AllAdminKeys(store AdminConfigReader) []string {
 		}
 	}
 
-	if store != nil {
-		if hash := strings.TrimSpace(store.AdminPasswordHash()); hash != "" {
-			return nil
-		}
-	}
-
 	for _, env := range os.Environ() {
 		pair := strings.SplitN(env, "=", 2)
 		if len(pair) != 2 {
@@ -247,7 +241,9 @@ func VerifyAdminCredential(candidate string, store AdminConfigReader) bool {
 	if store != nil {
 		hash := strings.TrimSpace(store.AdminPasswordHash())
 		if hash != "" {
-			return verifyAdminPasswordHash(candidate, hash)
+			if verifyAdminPasswordHash(candidate, hash) {
+				return true
+			}
 		}
 	}
 	keys := AllAdminKeys(store)
